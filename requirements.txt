@@ -1,0 +1,7 @@
+git+https://github.com/nacloos/baba-is-ai.git@40ae1b29dbc67f2ecea06cc161ed5ca51719e5e3
+requests>=2.31,<3
+python-dotenv>=1.0,<2
+Pillow>=10,<13
+Flask>=3,<4
+pytest>=8,<9
+
