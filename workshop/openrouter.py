@@ -31,7 +31,7 @@ class OpenRouterLLM:
         timeout: int = 60,
     ):
         self.model = model or os.getenv(
-            "OPENROUTER_MODEL", "mistralai/mistral-small-3.2-24b-instruct"
+            "OPENROUTER_MODEL", "qwen/qwen3-235b-a22b-2507"
         )
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
         if not self.api_key:
@@ -41,8 +41,9 @@ class OpenRouterLLM:
         self.timeout = timeout
         self.usage = Usage()
         self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "").strip()
-        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.075"))
-        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "0.20"))
+        self.provider_sort = os.getenv("OPENROUTER_PROVIDER_SORT", "throughput").strip()
+        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.20"))
+        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "0.60"))
 
     @property
     def remaining_usd(self) -> float:
@@ -61,6 +62,8 @@ class OpenRouterLLM:
         }
         if self.reasoning_effort:
             payload["reasoning_effort"] = self.reasoning_effort
+        if self.provider_sort:
+            payload["provider"] = {"sort": self.provider_sort}
 
         response = requests.post(
             f"{self.base_url.rstrip('/')}/chat/completions",

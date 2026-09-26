@@ -87,8 +87,9 @@ prompts are never sent to the dashboard.
 
 The runner stops before the configured budget is exceeded. Defaults:
 
-- model: `mistralai/mistral-small-3.2-24b-instruct`
+- model: `qwen/qwen3-235b-a22b-2507`
 - reasoning: disabled (set `OPENROUTER_REASONING_EFFORT` only for a reasoning model)
+- provider routing: highest throughput first (`OPENROUTER_PROVIDER_SORT=throughput`)
 - per-run budget: USD 3
 - final-suite budget: USD 9
 - maximum completion: 220 tokens per action
