@@ -31,7 +31,7 @@ class OpenRouterLLM:
         timeout: int = 60,
     ):
         self.model = model or os.getenv(
-            "OPENROUTER_MODEL", "qwen/qwen3-30b-a3b-instruct-2507"
+            "OPENROUTER_MODEL", "openai/gpt-5.4-mini"
         )
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
         if not self.api_key:
@@ -40,8 +40,9 @@ class OpenRouterLLM:
         self.budget_usd = float(budget_usd)
         self.timeout = timeout
         self.usage = Usage()
-        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.04815"))
-        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "0.1931"))
+        self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "low").strip()
+        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.75"))
+        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "4.50"))
 
     @property
     def remaining_usd(self) -> float:
@@ -51,6 +52,16 @@ class OpenRouterLLM:
         if self.remaining_usd <= 0:
             raise BudgetExceeded(f"Budget exhausted: ${self.usage.cost_usd:.4f}")
 
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+            "max_tokens": max_tokens,
+            "usage": {"include": True},
+        }
+        if self.reasoning_effort:
+            payload["reasoning_effort"] = self.reasoning_effort
+
         response = requests.post(
             f"{self.base_url.rstrip('/')}/chat/completions",
             headers={
@@ -59,13 +70,7 @@ class OpenRouterLLM:
                 "HTTP-Referer": "https://github.com/pa0lai/baba-agent-workshop",
                 "X-Title": "Baba Agent Workshop",
             },
-            json={
-                "model": self.model,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.2,
-                "max_tokens": max_tokens,
-                "usage": {"include": True},
-            },
+            json=payload,
             timeout=self.timeout,
         )
         response.raise_for_status()
@@ -102,4 +107,3 @@ class ScriptedLLM:
     def complete(self, prompt: str, max_tokens: int = 220) -> str:
         self.usage.calls += 1
         return self.outputs.pop(0) if self.outputs else "ACTION: idle"
-

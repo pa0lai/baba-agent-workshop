@@ -87,7 +87,8 @@ prompts are never sent to the dashboard.
 
 The runner stops before the configured budget is exceeded. Defaults:
 
-- model: `qwen/qwen3-30b-a3b-instruct-2507`
+- model: `openai/gpt-5.4-mini`
+- reasoning effort: `low` (configurable with `OPENROUTER_REASONING_EFFORT`)
 - per-run budget: USD 3
 - final-suite budget: USD 9
 - maximum completion: 220 tokens per action
@@ -109,4 +110,3 @@ This repository depends on, but does not redistribute, Baba Is AI. Baba Is AI
 is released under the MIT License and accompanies *Baba Is AI: Break the Rules
 to Beat the Benchmark* (Cloos et al., 2024). BALROG's text-observation design
 inspired the adapter used here.
-
