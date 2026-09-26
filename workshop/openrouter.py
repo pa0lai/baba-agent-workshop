@@ -31,7 +31,7 @@ class OpenRouterLLM:
         timeout: int = 60,
     ):
         self.model = model or os.getenv(
-            "OPENROUTER_MODEL", "deepseek/deepseek-v4-flash-0731"
+            "OPENROUTER_MODEL", "mistralai/mistral-small-3.2-24b-instruct"
         )
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
         if not self.api_key:
@@ -40,9 +40,9 @@ class OpenRouterLLM:
         self.budget_usd = float(budget_usd)
         self.timeout = timeout
         self.usage = Usage()
-        self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "low").strip()
-        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.021"))
-        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "0.32"))
+        self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "").strip()
+        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.075"))
+        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "0.20"))
 
     @property
     def remaining_usd(self) -> float:
