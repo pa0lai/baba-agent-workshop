@@ -31,7 +31,7 @@ class OpenRouterLLM:
         timeout: int = 60,
     ):
         self.model = model or os.getenv(
-            "OPENROUTER_MODEL", "qwen/qwen3-235b-a22b-2507"
+            "OPENROUTER_MODEL", "openai/gpt-4.1-mini"
         )
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
         if not self.api_key:
@@ -42,8 +42,8 @@ class OpenRouterLLM:
         self.usage = Usage()
         self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "").strip()
         self.provider_sort = os.getenv("OPENROUTER_PROVIDER_SORT", "throughput").strip()
-        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.20"))
-        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "0.60"))
+        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.40"))
+        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "1.60"))
 
     @property
     def remaining_usd(self) -> float:

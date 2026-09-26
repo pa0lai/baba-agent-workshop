@@ -87,7 +87,7 @@ prompts are never sent to the dashboard.
 
 The runner stops before the configured budget is exceeded. Defaults:
 
-- model: `qwen/qwen3-235b-a22b-2507`
+- model: `openai/gpt-4.1-mini`
 - reasoning: disabled (set `OPENROUTER_REASONING_EFFORT` only for a reasoning model)
 - provider routing: highest throughput first (`OPENROUTER_PROVIDER_SORT=throughput`)
 - per-run budget: USD 3
