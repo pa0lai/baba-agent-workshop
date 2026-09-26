@@ -87,7 +87,7 @@ prompts are never sent to the dashboard.
 
 The runner stops before the configured budget is exceeded. Defaults:
 
-- model: `openai/gpt-5.4-mini`
+- model: `deepseek/deepseek-v4-flash-0731`
 - reasoning effort: `low` (configurable with `OPENROUTER_REASONING_EFFORT`)
 - per-run budget: USD 3
 - final-suite budget: USD 9
