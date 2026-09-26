@@ -98,6 +98,10 @@ Change these through command-line flags or `.env`. OpenRouter may return the
 actual cost for each request. If it does not, the runner uses the configurable
 input/output price estimates from `.env`.
 
+Episode usage fields are per-level deltas even though one LLM client is shared
+across a suite. If the same state and action repeat three times, the runner
+requests a new plan; six consecutive repeats stop the episode early.
+
 ## Important classroom security note
 
 Each team should use its own rate-limited OpenRouter key. Do not run arbitrary

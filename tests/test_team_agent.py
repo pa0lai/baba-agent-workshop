@@ -29,4 +29,4 @@ def test_prompt_contains_grid_rules_and_actions():
     assert "Obj[baba]" in prompt
     assert "flag is win" in prompt
     assert "up, right, down, left" in prompt
-
+    assert "Last action feedback" in prompt

@@ -46,6 +46,9 @@ Active rules:
 Recent history:
 {recent}
 
+Last action feedback:
+{observation.last_result or "(none)"}
+
 Steps remaining: {observation.steps_remaining}
 Legal actions: {', '.join(ACTIONS)}
 
