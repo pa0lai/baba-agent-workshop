@@ -12,5 +12,14 @@ FINAL_SUITE = [
     {"task": "env/two_room-goto_win-distr_win_rule", "seed": 13, "max_steps": 65},
     {"task": "env/two_room-break_stop-goto_win", "seed": 14, "max_steps": 75},
     {"task": "env/two_room-break_stop-make_win", "seed": 15, "max_steps": 90},
+    {"task": "env/two_room-make_you-make_win", "seed": 16, "max_steps": 120},
+    {"task": "env/two_room-make_wall_win", "seed": 17, "max_steps": 120},
 ]
 
+ALL_SUITE = [*PUBLIC_SUITE, *FINAL_SUITE]
+
+SUITES = {
+    "public": PUBLIC_SUITE,
+    "final": FINAL_SUITE,
+    "all": ALL_SUITE,
+}

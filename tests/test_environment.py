@@ -19,3 +19,17 @@ def test_real_environment_smoke(monkeypatch):
     finally:
         env.close()
 
+
+@pytest.mark.parametrize(
+    "task",
+    ["env/two_room-make_you-make_win", "env/two_room-make_wall_win"],
+)
+def test_compositional_challenge_levels_load(monkeypatch, task):
+    monkeypatch.setenv("SDL_VIDEODRIVER", "dummy")
+    env = BabaTextEnv(task, seed=17, max_steps=5)
+    try:
+        first = env.reset()
+        assert "Rule[" in first.observation.grid
+        assert any("you" in rule for rule in first.observation.active_rules)
+    finally:
+        env.close()

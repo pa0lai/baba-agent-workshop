@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from workshop.openrouter import OpenRouterLLM
 from workshop.runner import run_episode
-from workshop.tasks import FINAL_SUITE, PUBLIC_SUITE
+from workshop.tasks import SUITES
 from workshop.telemetry import post_update
 
 
@@ -20,7 +20,7 @@ load_dotenv()
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--suite", choices=("public", "final"), default="public")
+    parser.add_argument("--suite", choices=tuple(SUITES), default="public")
     parser.add_argument("--budget", type=float, default=None)
     parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
     parser.add_argument("--team", default=os.getenv("TEAM_NAME", "Team Transformer"))
@@ -28,8 +28,9 @@ def main() -> None:
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
 
-    suite = PUBLIC_SUITE if args.suite == "public" else FINAL_SUITE
-    budget = args.budget if args.budget is not None else (3.0 if args.suite == "public" else 9.0)
+    suite = SUITES[args.suite]
+    default_budgets = {"public": 3.0, "final": 9.0, "all": 10.0}
+    budget = args.budget if args.budget is not None else default_budgets[args.suite]
     agent = importlib.import_module("team_agent")
     team = getattr(agent, "TEAM_NAME", args.team)
     llm = OpenRouterLLM(model=args.model, budget_usd=budget)

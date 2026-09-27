@@ -49,39 +49,25 @@ Then run the starter agent:
 python practice.py --task env/goto_win --seed 0
 ```
 
-Run all public levels:
+Run the three public levels while developing:
 
 ```bash
 python evaluate.py --suite public
 ```
 
-During the final, the instructor announces the suite and scoreboard URL:
+Run the complete ten-level challenge locally:
 
 ```bash
-python evaluate.py --suite final --scoreboard http://INSTRUCTOR_IP:8000
+python evaluate.py --suite all --budget 10
 ```
 
 Trajectories, JSON results, and animated GIFs are written to `runs/`.
 
-## Instructor dashboard
-
-On the instructor computer:
-
-```bash
-python instructor/dashboard.py --host 0.0.0.0 --port 8000
-```
-
-Open `http://localhost:8000` on the projector. Each team runner posts only
-telemetry (team name, progress, cost, and the rendered frame); API keys and
-prompts are never sent to the dashboard.
-
 ## Suggested 30-minute flow
 
-1. 3 min — manual demo and starter-agent failure.
-2. 12 min — teams edit `team_agent.py`.
-3. 5 min — public suite and trajectory debugging.
-4. 5 min — one revision.
-5. 5 min — final suite with the live dashboard.
+1. 4 min — manual demo and public baseline.
+2. 14 min — teams inspect replays and edit `team_agent.py`.
+3. 12 min — run all ten levels locally and keep iterating toward 10/10.
 
 ## Budget controls
 
@@ -92,6 +78,7 @@ The runner stops before the configured budget is exceeded. Defaults:
 - provider routing: highest throughput first (`OPENROUTER_PROVIDER_SORT=throughput`)
 - per-run budget: USD 3
 - final-suite budget: USD 9
+- all-ten-level budget: USD 10
 - maximum completion: 220 tokens per action
 
 Change these through command-line flags or `.env`. OpenRouter may return the

@@ -8,27 +8,18 @@
 2. Run `pytest -q` and `python scripts/smoke_run.py`.
 3. Pilot the intended model on at least 20 episodes. Aim for 20–40% starter
    success and 60–80% after reasonable improvements.
-4. Replace the final task seeds shortly before class if you want to discourage
-   hard-coded action sequences.
+4. Keep all ten tasks available from the start. Change seeds only if you want
+   to discourage hard-coded action sequences.
 5. Put every team on the same model, temperature, step limits, and budget.
-6. Confirm that student laptops can reach OpenRouter and the instructor's LAN
-   address.
+6. Confirm that student laptops can reach OpenRouter. No classroom LAN service
+   is required.
 
 ## Recommended room setup
 
 - 4–5 students per team.
 - One laptop and one team-specific, rate-limited OpenRouter key per team.
-- Instructor computer and student computers on the same network.
-- Projector browser opened to the dashboard.
-
-Start the dashboard:
-
-```bash
-python instructor/dashboard.py --host 0.0.0.0 --port 8000
-```
-
-Find the instructor computer's LAN IP and give teams a URL such as
-`http://192.168.1.20:8000`.
+- Each team runs `python evaluate.py --suite all --budget 10` locally.
+- Use the projector for the opening demo and one optional replay during review.
 
 ## Suggested roles
 
@@ -56,6 +47,18 @@ If the starter agent is too weak:
 - provide one successful trajectory;
 - allow a stronger model.
 
+## Ten-level challenge
+
+The first eight levels cover navigation, rule construction, distractors, and
+breaking `WALL IS STOP`. The final two require a different abstraction:
+
+- `two_room-make_you-make_win`: create another controllable object before
+  restoring the win rule;
+- `two_room-make_wall_win`: turn the separating wall into the winning object.
+
+AI coding assistants are allowed. This keeps the activity focused on testing,
+reading trajectories, and repairing an agent rather than typing boilerplate.
+
 ## Final score
 
 The provided formula strongly prioritizes solving levels:
@@ -68,10 +71,5 @@ Change it in `evaluate.py` if you want token efficiency to matter more.
 
 ## Operational caveats
 
-- The dashboard is a classroom development server, not an internet-facing
-  production service.
-- Telemetry is accepted without authentication. Keep it on a trusted LAN.
 - Do not give arbitrary student code access to a shared instructor API key.
-- The final suite in this repository is classroom-hidden, not cryptographically
-  hidden. Replace it or host the manifest separately for a serious contest.
-
+- The task manifest is public and intended for a workshop, not a secure contest.
