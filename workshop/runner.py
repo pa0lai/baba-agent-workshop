@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from .baba_env import BabaTextEnv
-from .openrouter import BudgetExceeded
+from .openrouter import BudgetExceeded, InfrastructureError, RequestDeadlineExceeded
 from .telemetry import post_update
 from .types import Transition
 
@@ -25,6 +25,7 @@ class EpisodeResult:
     prompt_tokens: int
     completion_tokens: int
     cost_usd: float
+    duration_seconds: float
     stopped_reason: str
     run_dir: str
 
@@ -74,7 +75,9 @@ def run_episode(
     output_root: Path,
     scoreboard_url: str | None = None,
     verbose: bool = True,
+    deadline_monotonic: float | None = None,
 ) -> EpisodeResult:
+    episode_started = time.monotonic()
     stamp = time.strftime("%Y%m%d-%H%M%S")
     safe_task = task.replace("env/", "").replace("/", "_").replace("#", "_")
     run_dir = output_root / f"{stamp}-{team}-{safe_task}-s{seed}"
@@ -99,6 +102,9 @@ def run_episode(
 
     try:
         for step_index in range(max_steps):
+            if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+                stopped_reason = "time_limit"
+                break
             if verbose:
                 print(f"\n[{team}] {task} seed={seed} step={step_index}/{max_steps}")
                 print(current.observation.grid)
@@ -110,6 +116,14 @@ def run_episode(
                     selected = str(agent.act(observation, history, llm)).lower().strip()
                 except BudgetExceeded:
                     stopped_reason = "budget_exceeded"
+                    return None
+                except RequestDeadlineExceeded:
+                    stopped_reason = "time_limit"
+                    return None
+                except InfrastructureError as exc:
+                    stopped_reason = "infrastructure_error"
+                    if verbose:
+                        print(f"Infrastructure error: {exc}")
                     return None
                 except Exception as exc:  # keep a workshop run alive after student-code errors
                     selected = "idle"
@@ -158,6 +172,9 @@ def run_episode(
                 done=current.done,
                 state_changed=changed,
                 state_hash=current.state_hash,
+                observation_grid=current.observation.grid,
+                active_rules=current.observation.active_rules,
+                last_result=current.observation.last_result,
             )
             history.append(transition)
             total_reward += current.reward
@@ -230,6 +247,7 @@ def run_episode(
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         cost_usd=cost_usd,
+        duration_seconds=time.monotonic() - episode_started,
         stopped_reason=stopped_reason,
         run_dir=str(run_dir),
     )

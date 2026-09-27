@@ -2,74 +2,56 @@
 
 ## Before the workshop
 
-1. Install the repository on one student-like Windows laptop and one macOS
-   laptop. Python 3.10/3.11 is the safest choice because the upstream game uses
-   legacy Gym.
-2. Run `pytest -q` and `python scripts/smoke_run.py`.
-3. Pilot the intended model on at least 20 episodes. Aim for 20–40% starter
-   success and 60–80% after reasonable improvements.
-4. Keep all ten tasks available from the start. Change seeds only if you want
-   to discourage hard-coded action sequences.
-5. Put every team on the same model, temperature, step limits, and budget.
-6. Confirm that student laptops can reach OpenRouter. No classroom LAN service
-   is required.
+1. Test one student-like Windows laptop and one macOS laptop with Python 3.10
+   or 3.11.
+2. Run `python -m pytest -q` and `python -m scripts.smoke_run`. Missing `baba`
+   is a hard test failure, not a skip.
+3. Run the frozen reference check and inspect its JSON, HTML, and all replays.
+4. Pilot the starter and a plausible student improvement on the assigned model.
+5. Give every team its own provider-limited OpenRouter key.
 
-## Recommended room setup
+No dashboard, instructor IP, inbound connection, or upload step is required.
 
-- 4–5 students per team.
-- One laptop and one team-specific, rate-limited OpenRouter key per team.
-- Each team runs `python evaluate.py --suite all --budget 10` locally.
-- Use the projector for the opening demo and one optional replay during review.
+## Activity goal
 
-## Suggested roles
+The primary goal is eight core levels: Bronze 4/8, Silver 6/8, and Gold 8/8.
+The two compositional levels are bonuses so they do not block a 30-minute class:
 
-- Driver: edits and runs the code.
-- World-model engineer: reads trajectories and tracks rules.
-- Prompt engineer: revises the LLM prompt.
-- Debugger: detects loops and invalid actions.
-- Reporter: explains the final design.
+- `two_room-make_you-make_win`
+- `two_room-make_wall_win`
 
-## Difficulty controls
+Teams choose levels freely. Use `python challenge.py --core` for the classroom
+checkpoint and `python challenge.py --all` for all ten.
 
-If the starter agent is too strong:
+## Operational safeguards
 
-- use `two_room`, `break_stop`, and `make_win` tasks;
-- lower the step limit;
-- use a smaller fixed model;
-- remove some hints from `build_prompt()`;
-- score repeated states and calls more heavily.
+- Default limits are 30 minutes per invocation and 6 minutes per level.
+- Timeout, connection, 429, and OpenRouter 5xx failures are infrastructure
+  outcomes and do not increment invalid student actions.
+- `--resume` retains cleared episodes after interruption.
+- `runs/challenge-budget.json` carries reported cost across invocations. It is
+  a convenience guard; the provider-side key limit is authoritative.
+- The report records the final agent hash. Resume rejects a changed agent so
+  one report cannot silently mix different implementations.
 
-If the starter agent is too weak:
+## Instructor reference agent
 
-- begin with `goto_win`;
-- keep active rules in the observation;
-- raise the step limit;
-- provide one successful trajectory;
-- allow a stronger model.
+`instructor/reference_agent.py` is a hybrid reference implementation, not raw
+GPT-4.1-mini puzzle-solving. GPT routes each level to a local symbolic-search
+component that parses the text grid, simulates pushes and dynamic rules, and
+searches low-level actions.
 
-## Ten-level challenge
-
-The first eight levels cover navigation, rule construction, distractors, and
-breaking `WALL IS STOP`. The final two require a different abstraction:
-
-- `two_room-make_you-make_win`: create another controllable object before
-  restoring the win rule;
-- `two_room-make_wall_win`: turn the separating wall into the winning object.
-
-AI coding assistants are allowed. This keeps the activity focused on testing,
-reading trajectories, and repairing an agent rather than typing boilerplate.
-
-## Final score
-
-The provided formula strongly prioritizes solving levels:
-
-```text
-score = solved * 1000 - steps - repeated_states * 3 - invalid_actions * 5
+```bash
+python challenge.py --all --agent instructor.reference_agent \
+  --budget-ledger runs/reference-budget.json --quiet
 ```
 
-Change it in `evaluate.py` if you want token efficiency to matter more.
+See `REFERENCE_RESULTS.md` for the maintained evidence record. Do not call the
+workshop camera-ready until the current ten-level command succeeds end to end
+within the limits on a clean installation.
 
-## Operational caveats
+## Optional legacy tools
 
-- Do not give arbitrary student code access to a shared instructor API key.
-- The task manifest is public and intended for a workshop, not a secure contest.
+`evaluate.py` and the dashboard remain for backwards compatibility. If the
+unauthenticated dashboard is demonstrated, keep it on a trusted LAN. Never run
+student code with a shared instructor key.

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
+from typing import Callable
 
 import requests
 from dotenv import load_dotenv
@@ -11,6 +13,14 @@ load_dotenv()
 
 
 class BudgetExceeded(RuntimeError):
+    pass
+
+
+class InfrastructureError(RuntimeError):
+    """OpenRouter/network failure that must not be scored as an agent error."""
+
+
+class RequestDeadlineExceeded(InfrastructureError):
     pass
 
 
@@ -29,6 +39,8 @@ class OpenRouterLLM:
         budget_usd: float = 3.0,
         api_key: str | None = None,
         timeout: int = 60,
+        max_retries: int = 2,
+        usage_callback: Callable[[Usage], None] | None = None,
     ):
         self.model = model or os.getenv(
             "OPENROUTER_MODEL", "openai/gpt-4.1-mini"
@@ -39,6 +51,9 @@ class OpenRouterLLM:
         self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         self.budget_usd = float(budget_usd)
         self.timeout = timeout
+        self.max_retries = max_retries
+        self.usage_callback = usage_callback
+        self.deadline_monotonic: float | None = None
         self.usage = Usage()
         self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "").strip()
         self.provider_sort = os.getenv("OPENROUTER_PROVIDER_SORT", "throughput").strip()
@@ -48,6 +63,17 @@ class OpenRouterLLM:
     @property
     def remaining_usd(self) -> float:
         return max(0.0, self.budget_usd - self.usage.cost_usd)
+
+    def set_deadline(self, deadline_monotonic: float | None) -> None:
+        self.deadline_monotonic = deadline_monotonic
+
+    def _request_timeout(self) -> float:
+        if self.deadline_monotonic is None:
+            return float(self.timeout)
+        remaining = self.deadline_monotonic - time.monotonic()
+        if remaining <= 0:
+            raise RequestDeadlineExceeded("Challenge time limit reached before API call.")
+        return max(0.1, min(float(self.timeout), remaining))
 
     def complete(self, prompt: str, max_tokens: int = 220) -> str:
         if self.remaining_usd <= 0:
@@ -65,23 +91,59 @@ class OpenRouterLLM:
         if self.provider_sort:
             payload["provider"] = {"sort": self.provider_sort}
 
-        response = requests.post(
-            f"{self.base_url.rstrip('/')}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://github.com/pa0lai/baba-agent-workshop",
-                "X-Title": "Baba Agent Workshop",
-            },
-            json=payload,
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
-        data = response.json()
-        usage = data.get("usage") or {}
-        prompt_tokens = int(usage.get("prompt_tokens") or 0)
-        completion_tokens = int(usage.get("completion_tokens") or 0)
-        reported_cost = usage.get("cost")
+        response = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = requests.post(
+                    f"{self.base_url.rstrip('/')}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://github.com/pa0lai/baba-agent-workshop",
+                        "X-Title": "Baba Agent Workshop",
+                    },
+                    json=payload,
+                    timeout=self._request_timeout(),
+                )
+                if response.status_code == 429 or response.status_code >= 500:
+                    response.raise_for_status()
+                response.raise_for_status()
+                break
+            except (requests.Timeout, requests.ConnectionError) as exc:
+                retryable = True
+                last_error = exc
+            except requests.HTTPError as exc:
+                status = exc.response.status_code if exc.response is not None else None
+                retryable = status == 429 or (status is not None and status >= 500)
+                last_error = exc
+            except requests.RequestException as exc:
+                retryable = False
+                last_error = exc
+
+            if not retryable or attempt >= self.max_retries:
+                raise InfrastructureError(
+                    f"OpenRouter request failed after {attempt + 1} attempt(s): {last_error}"
+                ) from last_error
+            delay = min(2**attempt, 4)
+            if self.deadline_monotonic is not None:
+                remaining = self.deadline_monotonic - time.monotonic()
+                if remaining <= delay:
+                    raise RequestDeadlineExceeded(
+                        "Challenge time limit reached while retrying OpenRouter."
+                    ) from last_error
+            time.sleep(delay)
+
+        if response is None:  # pragma: no cover - defensive
+            raise InfrastructureError("OpenRouter returned no response.")
+        try:
+            data = response.json()
+            usage = data.get("usage") or {}
+            prompt_tokens = int(usage.get("prompt_tokens") or 0)
+            completion_tokens = int(usage.get("completion_tokens") or 0)
+            reported_cost = usage.get("cost")
+            content = str(data["choices"][0]["message"]["content"])
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            raise InfrastructureError(f"Malformed OpenRouter response: {exc}") from exc
         estimated_cost = (
             prompt_tokens * self.input_rate + completion_tokens * self.output_rate
         ) / 1_000_000
@@ -90,13 +152,18 @@ class OpenRouterLLM:
         self.usage.completion_tokens += completion_tokens
         self.usage.cost_usd += cost
         self.usage.calls += 1
+        if self.usage_callback is not None:
+            try:
+                self.usage_callback(self.usage)
+            except OSError as exc:
+                raise InfrastructureError(f"Could not persist budget ledger: {exc}") from exc
 
         if self.usage.cost_usd > self.budget_usd:
             raise BudgetExceeded(
                 f"Request completed, but budget is now ${self.usage.cost_usd:.4f} "
                 f"> ${self.budget_usd:.2f}."
             )
-        return data["choices"][0]["message"]["content"]
+        return content
 
 
 class ScriptedLLM:
@@ -106,6 +173,10 @@ class ScriptedLLM:
         self.outputs = list(outputs)
         self.usage = Usage()
         self.budget_usd = 0.0
+        self.deadline_monotonic = None
+
+    def set_deadline(self, deadline_monotonic: float | None) -> None:
+        self.deadline_monotonic = deadline_monotonic
 
     def complete(self, prompt: str, max_tokens: int = 220) -> str:
         self.usage.calls += 1

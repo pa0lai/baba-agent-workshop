@@ -26,7 +26,8 @@ def build_prompt(observation: Observation, memory: list[Transition]) -> str:
 
     recent = "\n".join(
         f"step {item.step}: action={item.action}; reward={item.reward}; "
-        f"state_changed={item.state_changed}"
+        f"state_changed={item.state_changed}; rules={', '.join(item.active_rules) or '(unknown)'}; "
+        f"result={item.last_result or '(unknown)'}"
         for item in memory
     ) or "(no previous actions)"
 

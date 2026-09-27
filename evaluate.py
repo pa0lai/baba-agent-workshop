@@ -23,7 +23,7 @@ def main() -> None:
     parser.add_argument("--suite", choices=tuple(SUITES), default="public")
     parser.add_argument("--budget", type=float, default=None)
     parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
-    parser.add_argument("--team", default=os.getenv("TEAM_NAME", "Team Transformer"))
+    parser.add_argument("--team", default=None)
     parser.add_argument("--scoreboard")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
@@ -32,7 +32,7 @@ def main() -> None:
     default_budgets = {"public": 3.0, "final": 9.0, "all": 10.0}
     budget = args.budget if args.budget is not None else default_budgets[args.suite]
     agent = importlib.import_module("team_agent")
-    team = getattr(agent, "TEAM_NAME", args.team)
+    team = args.team or getattr(agent, "TEAM_NAME", os.getenv("TEAM_NAME", "Team Transformer"))
     llm = OpenRouterLLM(model=args.model, budget_usd=budget)
     results = []
     for item in suite:

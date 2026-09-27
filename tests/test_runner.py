@@ -6,6 +6,7 @@ from PIL import Image
 
 import workshop.runner as runner
 from workshop.openrouter import Usage
+from workshop.openrouter import InfrastructureError
 from workshop.types import Observation
 
 
@@ -112,3 +113,43 @@ def test_state_action_guard_resets_when_action_changes():
     assert guard.next_count("state", "right") == 3
     assert guard.record("state", "left") == 1
     assert guard.next_count("other-state", "left") == 1
+
+
+class InfrastructureFailingAgent:
+    def act(self, observation, history, llm):
+        raise InfrastructureError("provider unavailable")
+
+
+def test_infrastructure_error_is_not_invalid_student_action(monkeypatch, tmp_path):
+    monkeypatch.setattr(runner, "BabaTextEnv", StaticEnvironment)
+    result = runner.run_episode(
+        agent=InfrastructureFailingAgent(),
+        llm=SimpleNamespace(usage=Usage()),
+        team="Test",
+        task="env/static",
+        seed=0,
+        max_steps=20,
+        output_root=tmp_path,
+        verbose=False,
+    )
+    assert result.steps == 0
+    assert result.invalid_actions == 0
+    assert result.stopped_reason == "infrastructure_error"
+
+
+def test_expired_episode_deadline_stops_before_agent_call(monkeypatch, tmp_path):
+    monkeypatch.setattr(runner, "BabaTextEnv", StaticEnvironment)
+    agent = RepeatingAgent()
+    result = runner.run_episode(
+        agent=agent,
+        llm=SimpleNamespace(usage=Usage()),
+        team="Test",
+        task="env/static",
+        seed=0,
+        max_steps=20,
+        output_root=tmp_path,
+        verbose=False,
+        deadline_monotonic=0,
+    )
+    assert not agent.feedback
+    assert result.stopped_reason == "time_limit"

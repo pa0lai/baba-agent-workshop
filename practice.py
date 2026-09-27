@@ -39,7 +39,7 @@ def main() -> None:
     parser.add_argument("--max-steps", type=int, default=45)
     parser.add_argument("--budget", type=float, default=3.0)
     parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
-    parser.add_argument("--team", default=os.getenv("TEAM_NAME", "Team Transformer"))
+    parser.add_argument("--team", default=None)
     parser.add_argument("--scoreboard")
     parser.add_argument("--manual", action="store_true")
     args = parser.parse_args()
@@ -49,7 +49,7 @@ def main() -> None:
         return
 
     agent = importlib.import_module("team_agent")
-    team = getattr(agent, "TEAM_NAME", args.team)
+    team = args.team or getattr(agent, "TEAM_NAME", os.getenv("TEAM_NAME", "Team Transformer"))
     llm = OpenRouterLLM(model=args.model, budget_usd=args.budget)
     result = run_episode(
         agent=agent,
@@ -66,4 +66,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

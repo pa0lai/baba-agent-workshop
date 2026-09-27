@@ -1,7 +1,5 @@
+import baba  # noqa: F401
 import pytest
-
-
-baba = pytest.importorskip("baba")
 
 from workshop.baba_env import BabaTextEnv  # noqa: E402
 

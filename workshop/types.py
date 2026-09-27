@@ -32,7 +32,9 @@ class Transition:
     done: bool
     state_changed: bool
     state_hash: str
+    observation_grid: str = ""
+    active_rules: tuple[str, ...] = ()
+    last_result: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-
