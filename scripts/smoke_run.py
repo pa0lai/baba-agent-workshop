@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import team_agent
-from workshop.openrouter import ScriptedLLM
+from workshop.openai_client import ScriptedLLM
 from workshop.runner import run_episode
 
 

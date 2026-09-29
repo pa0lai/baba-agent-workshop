@@ -17,7 +17,7 @@ class BudgetExceeded(RuntimeError):
 
 
 class InfrastructureError(RuntimeError):
-    """OpenRouter/network failure that must not be scored as an agent error."""
+    """OpenAI API/network failure that must not be scored as an agent error."""
 
 
 class RequestDeadlineExceeded(InfrastructureError):
@@ -32,7 +32,7 @@ class Usage:
     calls: int = 0
 
 
-class OpenRouterLLM:
+class OpenAILLM:
     def __init__(
         self,
         model: str | None = None,
@@ -42,23 +42,22 @@ class OpenRouterLLM:
         max_retries: int = 2,
         usage_callback: Callable[[Usage], None] | None = None,
     ):
-        self.model = model or os.getenv(
-            "OPENROUTER_MODEL", "openai/gpt-4.1-mini"
-        )
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
+        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
         if not self.api_key:
-            raise RuntimeError("OPENROUTER_API_KEY is missing. Copy .env.example to .env.")
-        self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            raise RuntimeError("OPENAI_API_KEY is missing. Copy .env.example to .env.")
+        self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
         self.budget_usd = float(budget_usd)
         self.timeout = timeout
         self.max_retries = max_retries
         self.usage_callback = usage_callback
         self.deadline_monotonic: float | None = None
         self.usage = Usage()
-        self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "").strip()
-        self.provider_sort = os.getenv("OPENROUTER_PROVIDER_SORT", "throughput").strip()
-        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.40"))
-        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "1.60"))
+        self.input_rate = float(os.getenv("OPENAI_INPUT_USD_PER_M", "0.40"))
+        self.cached_input_rate = float(
+            os.getenv("OPENAI_CACHED_INPUT_USD_PER_M", "0.10")
+        )
+        self.output_rate = float(os.getenv("OPENAI_OUTPUT_USD_PER_M", "1.60"))
 
     @property
     def remaining_usd(self) -> float:
@@ -84,12 +83,7 @@ class OpenRouterLLM:
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.2,
             "max_tokens": max_tokens,
-            "usage": {"include": True},
         }
-        if self.reasoning_effort:
-            payload["reasoning_effort"] = self.reasoning_effort
-        if self.provider_sort:
-            payload["provider"] = {"sort": self.provider_sort}
 
         response = None
         for attempt in range(self.max_retries + 1):
@@ -99,14 +93,10 @@ class OpenRouterLLM:
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
-                        "HTTP-Referer": "https://github.com/pa0lai/baba-agent-workshop",
-                        "X-Title": "Baba Agent Workshop",
                     },
                     json=payload,
                     timeout=self._request_timeout(),
                 )
-                if response.status_code == 429 or response.status_code >= 500:
-                    response.raise_for_status()
                 response.raise_for_status()
                 break
             except (requests.Timeout, requests.ConnectionError) as exc:
@@ -122,32 +112,40 @@ class OpenRouterLLM:
 
             if not retryable or attempt >= self.max_retries:
                 raise InfrastructureError(
-                    f"OpenRouter request failed after {attempt + 1} attempt(s): {last_error}"
+                    f"OpenAI API request failed after {attempt + 1} attempt(s): {last_error}"
                 ) from last_error
             delay = min(2**attempt, 4)
             if self.deadline_monotonic is not None:
                 remaining = self.deadline_monotonic - time.monotonic()
                 if remaining <= delay:
                     raise RequestDeadlineExceeded(
-                        "Challenge time limit reached while retrying OpenRouter."
+                        "Challenge time limit reached while retrying OpenAI API."
                     ) from last_error
             time.sleep(delay)
 
         if response is None:  # pragma: no cover - defensive
-            raise InfrastructureError("OpenRouter returned no response.")
+            raise InfrastructureError("OpenAI API returned no response.")
         try:
             data = response.json()
             usage = data.get("usage") or {}
             prompt_tokens = int(usage.get("prompt_tokens") or 0)
             completion_tokens = int(usage.get("completion_tokens") or 0)
-            reported_cost = usage.get("cost")
-            content = str(data["choices"][0]["message"]["content"])
+            details = usage.get("prompt_tokens_details") or {}
+            cached_tokens = min(
+                prompt_tokens, max(0, int(details.get("cached_tokens") or 0))
+            )
+            content = data["choices"][0]["message"]["content"]
+            if not isinstance(content, str):
+                raise TypeError("message content is not text")
         except (KeyError, IndexError, TypeError, ValueError) as exc:
-            raise InfrastructureError(f"Malformed OpenRouter response: {exc}") from exc
-        estimated_cost = (
-            prompt_tokens * self.input_rate + completion_tokens * self.output_rate
+            raise InfrastructureError(f"Malformed OpenAI API response: {exc}") from exc
+
+        uncached_tokens = prompt_tokens - cached_tokens
+        cost = (
+            uncached_tokens * self.input_rate
+            + cached_tokens * self.cached_input_rate
+            + completion_tokens * self.output_rate
         ) / 1_000_000
-        cost = float(reported_cost) if reported_cost is not None else estimated_cost
         self.usage.prompt_tokens += prompt_tokens
         self.usage.completion_tokens += completion_tokens
         self.usage.cost_usd += cost

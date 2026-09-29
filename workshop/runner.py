@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from .baba_env import BabaTextEnv
-from .openrouter import BudgetExceeded, InfrastructureError, RequestDeadlineExceeded
+from .openai_client import BudgetExceeded, InfrastructureError, RequestDeadlineExceeded
 from .telemetry import post_update
 from .types import Transition
 

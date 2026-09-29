@@ -7,6 +7,11 @@ does not contain a table of level-specific action sequences.
 
 ## Current ten-level status
 
+> Routing note: these measurements were recorded through OpenRouter with the
+> provider-qualified model ID `openai/gpt-4.1-mini`. The workshop now calls
+> OpenAI directly with model ID `gpt-4.1-mini`; rerun the ten-level check before
+> treating this table as evidence for the new route.
+
 Verified end to end on 2026-09-28 at commit `dd2658c`, using
 `openai/gpt-4.1-mini` and the ten frozen challenge seeds:
 

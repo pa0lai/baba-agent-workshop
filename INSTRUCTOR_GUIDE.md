@@ -8,7 +8,7 @@
    is a hard test failure, not a skip.
 3. Run the frozen reference check and inspect its JSON, HTML, and all replays.
 4. Pilot the starter and a plausible student improvement on the assigned model.
-5. Give every team its own provider-limited OpenRouter key.
+5. Give every team its own OpenAI API key; prefer a separate project per team and set provider-side limits.
 
 No dashboard, instructor IP, inbound connection, or upload step is required.
 
@@ -26,11 +26,11 @@ checkpoint and `python challenge.py --all` for all ten.
 ## Operational safeguards
 
 - Default limits are 30 minutes per invocation and 6 minutes per level.
-- Timeout, connection, 429, and OpenRouter 5xx failures are infrastructure
+- Timeout, connection, 429, and OpenAI API 5xx failures are infrastructure
   outcomes and do not increment invalid student actions.
 - `--resume` retains cleared episodes after interruption.
 - `runs/challenge-budget.json` carries reported cost across invocations. It is
-  a convenience guard; the provider-side key limit is authoritative.
+  a convenience guard; the OpenAI usage dashboard is authoritative for billing.
 - The report records the final agent hash. Resume rejects a changed agent so
   one report cannot silently mix different implementations.
 

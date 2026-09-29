@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from workshop.openrouter import OpenRouterLLM
+from workshop.openai_client import OpenAILLM
 from workshop.runner import run_episode
 from workshop.tasks import SUITES
 from workshop.telemetry import post_update
@@ -22,7 +22,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--suite", choices=tuple(SUITES), default="public")
     parser.add_argument("--budget", type=float, default=None)
-    parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
+    parser.add_argument("--model", default=os.getenv("OPENAI_MODEL"))
     parser.add_argument("--team", default=None)
     parser.add_argument("--scoreboard")
     parser.add_argument("--quiet", action="store_true")
@@ -33,7 +33,7 @@ def main() -> None:
     budget = args.budget if args.budget is not None else default_budgets[args.suite]
     agent = importlib.import_module("team_agent")
     team = args.team or getattr(agent, "TEAM_NAME", os.getenv("TEAM_NAME", "Team Transformer"))
-    llm = OpenRouterLLM(model=args.model, budget_usd=budget)
+    llm = OpenAILLM(model=args.model, budget_usd=budget)
     results = []
     for item in suite:
         results.append(

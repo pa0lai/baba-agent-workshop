@@ -10,7 +10,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from workshop.openrouter import OpenRouterLLM
+from workshop.openai_client import OpenAILLM
 from workshop.report import write_report
 from workshop.runner import run_episode
 from workshop.runner import EpisodeResult
@@ -61,7 +61,7 @@ def main() -> None:
     parser.add_argument("--agent", default="team_agent", help="Python module containing act().")
     parser.add_argument("--budget", type=float, default=10.0, help="Cross-run USD cap.")
     parser.add_argument("--budget-ledger", type=Path, default=Path("runs/challenge-budget.json"))
-    parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
+    parser.add_argument("--model", default=os.getenv("OPENAI_MODEL"))
     parser.add_argument("--team", default=None)
     parser.add_argument("--time-limit", type=float, default=1800, help="Whole-run seconds.")
     parser.add_argument("--level-time-limit", type=float, default=360, help="Per-level seconds.")
@@ -104,7 +104,7 @@ def main() -> None:
             f"Cross-run budget exhausted (${spent_before:.4f}/${args.budget:.2f}). "
             "Use a fresh instructor-approved ledger or raise the provider-side cap."
         )
-    llm = OpenRouterLLM(
+    llm = OpenAILLM(
         model=model,
         budget_usd=remaining_budget,
         usage_callback=lambda usage: _write_ledger(

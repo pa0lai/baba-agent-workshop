@@ -29,8 +29,8 @@ steps, cost, runtime, replay GIFs, and your final agent hash.
 
 ## Rules
 
-- Use the assigned model and your team's rate-limited key.
+- Use the assigned model and your team's OpenAI API key.
 - AI coding assistants are allowed, but your team must explain its component.
 - Do not edit `workshop/`, the evaluator, or hard-code map action sequences.
-- Stay under the assigned provider and local budget.
+- Stay under the assigned OpenAI project and local budget.
 - Return exactly one of `idle`, `up`, `right`, `down`, or `left` per step.

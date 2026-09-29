@@ -8,7 +8,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from workshop.baba_env import BabaTextEnv
-from workshop.openrouter import OpenRouterLLM
+from workshop.openai_client import OpenAILLM
 from workshop.runner import run_episode
 
 
@@ -38,7 +38,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max-steps", type=int, default=45)
     parser.add_argument("--budget", type=float, default=3.0)
-    parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
+    parser.add_argument("--model", default=os.getenv("OPENAI_MODEL"))
     parser.add_argument("--team", default=None)
     parser.add_argument("--scoreboard")
     parser.add_argument("--manual", action="store_true")
@@ -50,7 +50,7 @@ def main() -> None:
 
     agent = importlib.import_module("team_agent")
     team = args.team or getattr(agent, "TEAM_NAME", os.getenv("TEAM_NAME", "Team Transformer"))
-    llm = OpenRouterLLM(model=args.model, budget_usd=args.budget)
+    llm = OpenAILLM(model=args.model, budget_usd=args.budget)
     result = run_episode(
         agent=agent,
         llm=llm,

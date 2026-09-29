@@ -5,8 +5,8 @@ import pytest
 from PIL import Image
 
 import workshop.runner as runner
-from workshop.openrouter import Usage
-from workshop.openrouter import InfrastructureError
+from workshop.openai_client import Usage
+from workshop.openai_client import InfrastructureError
 from workshop.types import Observation
 
 

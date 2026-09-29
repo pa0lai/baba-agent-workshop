@@ -6,7 +6,7 @@ from PIL import Image
 
 import challenge
 from challenge import progress_bar
-from workshop.openrouter import Usage
+from workshop.openai_client import Usage
 from workshop.report import write_report
 from workshop.runner import EpisodeResult
 from workshop.tasks import BONUS_LEVELS, CHALLENGE_LEVELS, CORE_LEVELS, LEVEL_BY_NAME
@@ -98,7 +98,7 @@ def test_core_run_honors_cli_team_and_resume_skips_cleared(monkeypatch, tmp_path
         )
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(challenge, "OpenRouterLLM", FakeLLM)
+    monkeypatch.setattr(challenge, "OpenAILLM", FakeLLM)
     monkeypatch.setattr(challenge, "run_episode", fake_run_episode)
     monkeypatch.setattr(challenge.time, "strftime", lambda _format: "fixed")
     ledger = tmp_path / "ledger.json"
