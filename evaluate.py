@@ -22,7 +22,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--suite", choices=tuple(SUITES), default="public")
     parser.add_argument("--budget", type=float, default=None)
-    parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
+    parser.add_argument("--model", default=os.getenv("OPENAI_MODEL"))
     parser.add_argument("--team", default=None)
     parser.add_argument("--scoreboard")
     parser.add_argument("--quiet", action="store_true")

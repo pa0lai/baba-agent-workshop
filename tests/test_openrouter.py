@@ -7,7 +7,7 @@ from workshop.openrouter import InfrastructureError, OpenRouterLLM
 
 
 def make_llm(monkeypatch, retries=2):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     return OpenRouterLLM(max_retries=retries)
 
 
@@ -48,7 +48,7 @@ def test_timeout_becomes_infrastructure_error(monkeypatch):
 
 def test_usage_callback_persists_each_successful_request(monkeypatch):
     seen = []
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     llm = OpenRouterLLM(max_retries=0, usage_callback=lambda usage: seen.append(usage.cost_usd))
     response = SimpleNamespace(
         status_code=200,

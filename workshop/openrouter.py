@@ -17,7 +17,7 @@ class BudgetExceeded(RuntimeError):
 
 
 class InfrastructureError(RuntimeError):
-    """OpenRouter/network failure that must not be scored as an agent error."""
+    """OpenAI/network failure that must not be scored as an agent error."""
 
 
 class RequestDeadlineExceeded(InfrastructureError):
@@ -43,22 +43,22 @@ class OpenRouterLLM:
         usage_callback: Callable[[Usage], None] | None = None,
     ):
         self.model = model or os.getenv(
-            "OPENROUTER_MODEL", "openai/gpt-4.1-mini"
+            "OPENAI_MODEL", "gpt-4.1-mini"
         )
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
         if not self.api_key:
-            raise RuntimeError("OPENROUTER_API_KEY is missing. Copy .env.example to .env.")
-        self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            raise RuntimeError("OPENAI_API_KEY is missing. Copy .env.example to .env.")
+        self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
         self.budget_usd = float(budget_usd)
         self.timeout = timeout
         self.max_retries = max_retries
         self.usage_callback = usage_callback
         self.deadline_monotonic: float | None = None
         self.usage = Usage()
-        self.reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "").strip()
-        self.provider_sort = os.getenv("OPENROUTER_PROVIDER_SORT", "throughput").strip()
-        self.input_rate = float(os.getenv("OPENROUTER_INPUT_USD_PER_M", "0.40"))
-        self.output_rate = float(os.getenv("OPENROUTER_OUTPUT_USD_PER_M", "1.60"))
+        self.reasoning_effort = os.getenv("OPENAI_REASONING_EFFORT", "").strip()
+        self.provider_sort = os.getenv("OPENAI_PROVIDER_SORT", "").strip()
+        self.input_rate = float(os.getenv("OPENAI_INPUT_USD_PER_M", "0.40"))
+        self.output_rate = float(os.getenv("OPENAI_OUTPUT_USD_PER_M", "1.60"))
 
     @property
     def remaining_usd(self) -> float:
@@ -99,8 +99,6 @@ class OpenRouterLLM:
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
-                        "HTTP-Referer": "https://github.com/pa0lai/baba-agent-workshop",
-                        "X-Title": "Baba Agent Workshop",
                     },
                     json=payload,
                     timeout=self._request_timeout(),
@@ -122,19 +120,19 @@ class OpenRouterLLM:
 
             if not retryable or attempt >= self.max_retries:
                 raise InfrastructureError(
-                    f"OpenRouter request failed after {attempt + 1} attempt(s): {last_error}"
+                    f"OpenAI request failed after {attempt + 1} attempt(s): {last_error}"
                 ) from last_error
             delay = min(2**attempt, 4)
             if self.deadline_monotonic is not None:
                 remaining = self.deadline_monotonic - time.monotonic()
                 if remaining <= delay:
                     raise RequestDeadlineExceeded(
-                        "Challenge time limit reached while retrying OpenRouter."
+                        "Challenge time limit reached while retrying OpenAI."
                     ) from last_error
             time.sleep(delay)
 
         if response is None:  # pragma: no cover - defensive
-            raise InfrastructureError("OpenRouter returned no response.")
+            raise InfrastructureError("OpenAI returned no response.")
         try:
             data = response.json()
             usage = data.get("usage") or {}
@@ -143,7 +141,7 @@ class OpenRouterLLM:
             reported_cost = usage.get("cost")
             content = str(data["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError, ValueError) as exc:
-            raise InfrastructureError(f"Malformed OpenRouter response: {exc}") from exc
+            raise InfrastructureError(f"Malformed OpenAI response: {exc}") from exc
         estimated_cost = (
             prompt_tokens * self.input_rate + completion_tokens * self.output_rate
         ) / 1_000_000
