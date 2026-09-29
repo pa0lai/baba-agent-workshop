@@ -38,7 +38,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max-steps", type=int, default=45)
     parser.add_argument("--budget", type=float, default=3.0)
-    parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
+    parser.add_argument("--model", default=os.getenv("OPENAI_MODEL"))
     parser.add_argument("--team", default=None)
     parser.add_argument("--scoreboard")
     parser.add_argument("--manual", action="store_true")

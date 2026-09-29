@@ -23,10 +23,10 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Put a team-specific, provider-limited OpenRouter key in `.env`:
+Put your OpenAI API key in `.env`:
 
 ```text
-OPENROUTER_API_KEY=...
+OPENAI_API_KEY=...
 TEAM_NAME=Attention
 ```
 
@@ -68,10 +68,10 @@ bonus levels extend the goal without blocking the 30-minute activity.
 ## Safety limits
 
 The default whole-run limit is 30 minutes and the per-level limit is 6 minutes.
-OpenRouter timeouts, 429s, and 5xx responses are retried and reported as
+OpenAI timeouts, 429s, and 5xx responses are retried and reported as
 infrastructure errors, not invalid student actions. Episode cost is a per-level
 delta. A local ledger enforces the configured budget across challenge process
-restarts; an OpenRouter credit limit remains the authoritative hard cap.
+restarts; your OpenAI billing limit remains the authoritative hard cap.
 
 If the same state and action recur three times, the runner requests replanning;
 six consecutive repetitions stop that episode. History entries include the

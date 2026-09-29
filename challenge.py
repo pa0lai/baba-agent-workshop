@@ -61,7 +61,7 @@ def main() -> None:
     parser.add_argument("--agent", default="team_agent", help="Python module containing act().")
     parser.add_argument("--budget", type=float, default=10.0, help="Cross-run USD cap.")
     parser.add_argument("--budget-ledger", type=Path, default=Path("runs/challenge-budget.json"))
-    parser.add_argument("--model", default=os.getenv("OPENROUTER_MODEL"))
+    parser.add_argument("--model", default=os.getenv("OPENAI_MODEL"))
     parser.add_argument("--team", default=None)
     parser.add_argument("--time-limit", type=float, default=1800, help="Whole-run seconds.")
     parser.add_argument("--level-time-limit", type=float, default=360, help="Per-level seconds.")
